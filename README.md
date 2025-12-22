@@ -111,6 +111,8 @@ press ***F1*** to start capturing. then play the game and press ***F10*** to sto
 > NOTE 2. if you run ```python3 datasetmake.py``` you will need to re-start the script
 > if you run ```python3 loop_datamaker.py``` you can just press ***F1*** to start capturing again
 
+***the keys that are geting captured are just  ```Shift```, ```Ctrl```, ```w```, ```a```, ```s```, ```d```, ```q```, ```e``` and ```mouse movment```***
+
 >[!TIP]
 > increase the FPS for better capturing
 
@@ -170,3 +172,28 @@ now the model will play the game
 
 >[!IMPORTANT]
 >if anything goes wrong press "esc" to stop the model
+
+## advantages
+
+one big list of advantages is the User-Friendly and Robust Workflow
+
+***1. Automatic Data Organization: The data collection scripts automatically create and manage datasets in clearly labeled folders (run01, run02, etc.), keeping your experiments organized.***
+
+***2. Resumable Training: You can stop and resume the training process at any time without losing progress, which is perfect for long training sessions and serious projects.***
+
+***3. Integrated Visualization: With TensorBoard support, you can easily graph the model's learning progress to see how its performance improves over time.***
+
+***Flexible and Configurable: Key parameters for data collection, training, and inference are clearly defined, making it easy to experiment and tune the agent's behavior.***
+
+***Clear and Modular Codebase: The project is well-structured and serves as an excellent learning resource for anyone interested in imitation learning, computer vision, or game AI.***
+
+## ***KEY ADVANTAGES***
+***1. Another advantage is that the code’s modular, flexible design allows it to be reused across different games and applications. This adaptability makes it easy to integrate into new projects or expand its functionality without rewriting the core logic.***
+
+***2. End-to-End Imitation Learning: the project provides a complete, self-contained pipeline for building a game-playing AI. It handles everything from data collection and training to real-time inference, making it a comprehensive solution.***
+
+***3. Learns by Example, Not by Rules: PILA learns directly from observing human gameplay. This "show, don't tell" approach is powerful because it requires no hard-coded logic or manual programming of behaviors, allowing it to  learn complex and nuanced driving styles.***
+
+***4. Real-Time Performance: The agent operates in real-time, using efficient screen capturing (dxcam) and a streamlined model to react to live gameplay without significant lag.***
+
+***5. Intelligent Training with Attention: The training process uses a custom attention mechanism that gives more weight to frames with significant player actions. This helps the model focus on the most important moments of gameplay, leading to more efficient and effective learning.***
