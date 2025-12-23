@@ -197,3 +197,13 @@ one big list of advantages is the User-Friendly and Robust Workflow
 ***4. Real-Time Performance: The agent operates in real-time, using efficient screen capturing (dxcam) and a streamlined model to react to live gameplay without significant lag.***
 
 ***5. Intelligent Training with Attention: The training process uses a custom attention mechanism that gives more weight to frames with significant player actions. This helps the model focus on the most important moments of gameplay, leading to more efficient and effective learning.***
+
+---
+
+## Credits
+
+**[tryfonaskam](https://github.com/tryfonaskam)** — Project author and lead developer.  
+Designed and implemented the full imitation learning pipeline, including data capture, dataset organization, neural network architecture, training workflow, checkpointing, and real-time inference. Responsible for model training, experimentation, documentation, and overall project execution.
+
+**[sahusaurya](https://github.com/sahusaurya)** — Project ideation and environment contribution.  
+Helped shape the initial project direction, identifying PolyTrack as an appropriate environment for imitation learning, and contributing a custom-designed test track used for evaluation.
