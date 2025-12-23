@@ -1,4 +1,4 @@
-# 🚗 PILA — PolyTrack Imitation Learning Agent
+# PILA — PolyTrack Imitation Learning Agent
 
 **PILA (PolyTrack Imitation Learning AI)** is an imitation learning agent trained to play **PolyTrack** by learning directly from recorded human gameplay — not from hard-coded rules.
 
@@ -18,21 +18,21 @@ Instead of manually programming behavior, PILA uses **supervised learning** to m
 
 ---
 
-## ✨ What Is PILA?
+## What Is PILA?
 
 PILA learns how to play PolyTrack by:
 
-- 🎥 Observing gameplay data (states + actions)
-- 🧠 Training a neural network on this data
-- 🎮 Reproducing player behavior in real time inside the game
+- Observing gameplay data (states + actions)
+- Training a neural network on this data
+- Reproducing player behavior in real time inside the game
 
 This approach eliminates hand-written logic and relies entirely on **learning by example**.
 
 ---
 
-## 🧠 How It Works
+## How It Works
 
-### 📊 Data Collection
+### Data Collection
 - Gameplay is recorded as **observations (inputs)** and **actions(input and output)**
   
 - Outputs represent player controls:
@@ -42,7 +42,7 @@ This approach eliminates hand-written logic and relies entirely on **learning by
 
 ##
 
-### 🏋️ Training
+### Training
 - A neural network is trained using **imitation learning**
 - The model minimizes loss between:
   - Predicted actions
@@ -50,13 +50,13 @@ This approach eliminates hand-written logic and relies entirely on **learning by
 - Trained models are saved as **checkpoints(every 2 epochs) or complete save** for later use
 ##
 
-### ▶️ Inference / Playing
+### Inference / Playing
 1. The trained model reads **live game frames**
 2. It predicts the next actions using the current frame
 3. Actions are sent to the game as **keyboard inputs**
 
 ---
-## ⚙️ Requirements
+## Requirements
 
 -  Modern **CPU or GPU**
 -  **Python 3.11.9**
