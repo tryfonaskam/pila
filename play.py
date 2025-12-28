@@ -26,7 +26,7 @@ MOUSE_SCALE_Y = 0.0
 # Control thresholds
 QE_THRESH = 0.008
 SHIFT_CTRL_THRESH = 0.005
-WASD_THRESH = 0.15
+WASD_THRESH = 0.5
 
 # Integrator smoothing
 MOUSE_ALPHA = 0.6
