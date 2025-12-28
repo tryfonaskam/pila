@@ -10,7 +10,7 @@ from torch import nn
 time.sleep(5)
 
 # config start
-MODEL_PATH = "models/checkpoint_epoch_60.pth"
+MODEL_PATH = "models\control_model.pth"
 
 IMG_SIZE = 256
 FRAME_STACK = 4
@@ -24,19 +24,19 @@ MOUSE_SCALE_X = 0.0
 MOUSE_SCALE_Y = 0.0
 
 # Control thresholds
-ROLL_THRESH = 0.008
-THROTTLE_THRESH = 0.005
-WASD_THRESH = 0.33
+QE_THRESH = 0.008
+SHIFT_CTRL_THRESH = 0.005
+WASD_THRESH = 0.15
 
 # Integrator smoothing
 MOUSE_ALPHA = 0.6
-THROTTLE_ALPHA = 0.05
+SHIFT_CTRL_ALPHA = 0.05
 
 # config end
 
 
-# mdoel
-class FlightNet(nn.Module):
+# model
+class ControlNet(nn.Module):
     def __init__(self):
         super().__init__()
         self.cnn = nn.Sequential(
@@ -57,7 +57,7 @@ class FlightNet(nn.Module):
 
 # load model
 print("[INFO] Loading model...")
-model = FlightNet().to(DEVICE)
+model = ControlNet().to(DEVICE)
 
 # auto loading of different checkpoint formats
 
@@ -92,7 +92,7 @@ frame_buffer = deque(maxlen=FRAME_STACK)
 # states
 mouse_x_state = 0.0
 mouse_y_state = 0.0
-throttle_state = 0.0
+shift_ctrl_state = 0.0
 
 
 def preprocess(frame):
@@ -119,12 +119,12 @@ while not keyboard.is_pressed(STOP_KEY):
     with torch.no_grad():
         out = model(inp)[0].cpu().numpy()
 
-    elevator, rudder, roll_qe, throttle, mouse_dx, mouse_dy = out
+    w_s, a_d, q_e, shift_ctrl, mouse_dx, mouse_dy = out
 
     # mouse
 
-    target_dx = mouse_dx + rudder
-    target_dy = mouse_dy + elevator
+    target_dx = mouse_dx + a_d
+    target_dy = mouse_dy + w_s
 
     mouse_x_state = MOUSE_ALPHA * mouse_x_state + (1 - MOUSE_ALPHA) * target_dx
     mouse_y_state = MOUSE_ALPHA * mouse_y_state + (1 - MOUSE_ALPHA) * target_dy
@@ -140,10 +140,10 @@ while not keyboard.is_pressed(STOP_KEY):
     # wasd
 
     # W and S
-    if elevator > WASD_THRESH:
+    if w_s > WASD_THRESH:
         keyboard.press("w")
         keyboard.release("s")
-    elif elevator < -WASD_THRESH:
+    elif w_s < -WASD_THRESH:
         keyboard.press("s")
         keyboard.release("w")
     else:
@@ -151,10 +151,10 @@ while not keyboard.is_pressed(STOP_KEY):
         keyboard.release("s")
 
     # A and D
-    if rudder > WASD_THRESH:
+    if a_d > WASD_THRESH:
         keyboard.press("d")
         keyboard.release("a")
-    elif rudder < -WASD_THRESH:
+    elif a_d < -WASD_THRESH:
         keyboard.press("a")
         keyboard.release("d")
     else:
@@ -163,10 +163,10 @@ while not keyboard.is_pressed(STOP_KEY):
 
 
     # Q and E
-    if roll_qe > ROLL_THRESH:
+    if q_e > QE_THRESH:
         keyboard.press("e")
         keyboard.release("q")
-    elif roll_qe < -ROLL_THRESH:
+    elif q_e < -QE_THRESH:
         keyboard.press("q")
         keyboard.release("e")
     else:
@@ -174,24 +174,24 @@ while not keyboard.is_pressed(STOP_KEY):
         keyboard.release("e")
 
     # shift and ctrl
-    throttle_state = (
-        (1 - THROTTLE_ALPHA) * throttle_state +
-        THROTTLE_ALPHA * throttle
+    shift_ctrl_state = (
+        (1 - SHIFT_CTRL_ALPHA) * shift_ctrl_state +
+        SHIFT_CTRL_ALPHA * shift_ctrl
     )
 
-    if throttle_state > THROTTLE_THRESH:
+    if shift_ctrl_state > SHIFT_CTRL_THRESH:
         keyboard.press("shift")
         keyboard.release("ctrl")
-    elif throttle_state < -THROTTLE_THRESH:
+    elif shift_ctrl_state < -SHIFT_CTRL_THRESH:
         keyboard.press("ctrl")
         keyboard.release("shift")
     else:
         keyboard.release("shift")
         keyboard.release("ctrl")
-
+    print(out)
     time.sleep(1 / FPS)
 
-# stop realease all keys
+# stop release all keys
 camera.stop()
 keyboard.release("shift")
 keyboard.release("ctrl")

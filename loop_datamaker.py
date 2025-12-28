@@ -16,28 +16,28 @@ BASE_DIR = "dataset"      # Base folder for all runs
 REGION = None             # None = full monitor; or set (left, top, right, bottom)
 
 # Control keys
-KEY_PITCH_UP    = 's'
-KEY_PITCH_DOWN  = 'w'
-KEY_YAW_LEFT    = 'a'
-KEY_YAW_RIGHT   = 'd'
-KEY_ROLL_LEFT   = 'q'
-KEY_ROLL_RIGHT  = 'e'
-KEY_THROTTLE_UP = 'shift'
-KEY_THROTTLE_DN = 'ctrl'
+KEY_W = 'w'
+KEY_S = 's'
+KEY_A = 'a'
+KEY_D = 'd'
+KEY_Q = 'q'
+KEY_E = 'e'
+KEY_SHIFT = 'shift'
+KEY_CTRL = 'ctrl'
 
 START_KEY = 'F1'
 STOP_KEY  = 'F10'
-EXIT_KEY  = 'F2'  # Press ESC to exit the script entirely
+EXIT_KEY  = 'F2'  # Press to exit the script entirely
 
 # config end
 
 def axis(neg, pos):
     return float(keyboard.is_pressed(pos)) - float(keyboard.is_pressed(neg))
 
-def throttle():
-    if keyboard.is_pressed(KEY_THROTTLE_UP):
+def shift_ctrl():
+    if keyboard.is_pressed(KEY_SHIFT):
         return 1.0
-    if keyboard.is_pressed(KEY_THROTTLE_DN):
+    if keyboard.is_pressed(KEY_CTRL):
         return -1.0
     return 0.0
 
@@ -98,10 +98,10 @@ try:
             cv2.imwrite(os.path.join(FRAMES_DIR, frame_name), frame)
 
             # Keyboard controls
-            elevator = axis(KEY_PITCH_UP, KEY_PITCH_DOWN)
-            rudder   = axis(KEY_YAW_LEFT, KEY_YAW_RIGHT)
-            roll_qe  = axis(KEY_ROLL_LEFT, KEY_ROLL_RIGHT)
-            thr      = throttle()
+            w_s = axis(KEY_S, KEY_W)
+            a_d = axis(KEY_A, KEY_D)
+            q_e = axis(KEY_Q, KEY_E)
+            shift_ctrl_val = shift_ctrl()
 
             # Mouse deltas (relative)
             mx, my = mouse.get_position()
@@ -121,10 +121,10 @@ try:
             # Save record
             records.append([
                 frame_name,
-                elevator,
-                rudder,
-                roll_qe,
-                thr,
+                w_s,
+                a_d,
+                q_e,
+                shift_ctrl_val,
                 mouse_dx_scaled,
                 mouse_dy_scaled
             ])
@@ -135,7 +135,7 @@ try:
 
         # Save data after stopping
         df = pd.DataFrame(records, columns=[
-            "frame","elevator","rudder","roll_qe","throttle","mouse_dx","mouse_dy"
+            "frame","w_s","a_d","q_e","shift_ctrl","mouse_dx","mouse_dy"
         ])
         df.to_csv(CSV_PATH, index=False)
         print(f" Saved {len(df)} samples to {CSV_PATH}")

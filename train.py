@@ -7,6 +7,7 @@ from torch import nn
 from torch.utils.data import Dataset, DataLoader
 from tqdm import tqdm
 from torch.utils.tensorboard import SummaryWriter
+
 # config start
 CHECKPOINT_DIR = "checkpoints"
 os.makedirs(CHECKPOINT_DIR, exist_ok=True)
@@ -15,7 +16,7 @@ DATA_DIR = "dataset"          # contains run01, run02, ...
 IMG_SIZE = 256                # image size (square)
 FRAME_STACK = 4               # number of frames stacked
 BATCH_SIZE = 128              # training batch size
-EPOCHS = 50                   # total training epochs
+EPOCHS = 5                    # total training epochs
 LR = 1e-4                     # learning rate
 
 # Continuous attention
@@ -23,10 +24,10 @@ BASE_WEIGHT = 0.4             # minimum weight for zero frames
 DYNAMIC_WEIGHT = 0.1          # how much nonzero frames add (0–1)
 ATTN_SCALE = 0.1              # sensitivity
 
-SAVE_EVERY = 2                # epochs to save checkpoints
+SAVE_EVERY = 1                # epochs to save checkpoints
 
 MODEL_DIR = "models"          # model folder directory
-MODEL_PATH = os.path.join(MODEL_DIR, "flight_model.pth")         # model save path
+MODEL_PATH = os.path.join(MODEL_DIR, "control_model.pth")         # model save path
 
 # config end
 
@@ -40,7 +41,7 @@ def find_runs(root):
     ]
 
 
-class FlightDataset(Dataset):
+class ControlDataset(Dataset):
     def __init__(self, root):
         self.samples = []
 
@@ -81,10 +82,10 @@ class FlightDataset(Dataset):
         x = np.concatenate(imgs, axis=0)  # 12×256×256
 
         y = np.array([
-            float(rows[i]["elevator"]),
-            float(rows[i]["rudder"]),
-            float(rows[i]["roll_qe"]),
-            float(rows[i]["throttle"]),
+            float(rows[i]["w_s"]),
+            float(rows[i]["a_d"]),
+            float(rows[i]["q_e"]),
+            float(rows[i]["shift_ctrl"]),
             float(rows[i]["mouse_dx"]),
             float(rows[i]["mouse_dy"]),
         ], dtype=np.float32)
@@ -92,7 +93,7 @@ class FlightDataset(Dataset):
         return torch.tensor(x), torch.tensor(y)
 
 
-class FlightNet(nn.Module):
+class ControlNet(nn.Module):
     def __init__(self):
         super().__init__()
         self.cnn = nn.Sequential(
@@ -126,7 +127,7 @@ def compute_attention(actions):
 def main():
     os.makedirs(MODEL_DIR, exist_ok=True)
 
-    dataset = FlightDataset(DATA_DIR)
+    dataset = ControlDataset(DATA_DIR)
     loader = DataLoader(
         dataset,
         batch_size=BATCH_SIZE,
@@ -139,7 +140,7 @@ def main():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print("Using device:", device)
 
-    model = FlightNet().to(device)
+    model = ControlNet().to(device)
     optimizer = torch.optim.Adam(model.parameters(), lr=LR)
 
     start_epoch = 0
@@ -203,14 +204,15 @@ def main():
 
             print(f"[✔] Saved checkpoint: {ckpt_path}")
 
-        if epoch % SAVE_EVERY == 0:
+        if epoch == EPOCHS - 1:
             torch.save({
-                "epoch": epoch,
-                "model": model.state_dict(),
-                "optim": optimizer.state_dict()
-            }, MODEL_PATH)
+            "epoch": epoch,
+            "model": model.state_dict(),
+            "optim": optimizer.state_dict()
+        }, MODEL_PATH)
 
     print("Training complete")
+
 
 
 if __name__ == "__main__":
