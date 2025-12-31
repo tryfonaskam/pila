@@ -1,220 +1,182 @@
 import os
-import csv
 import cv2
-import torch
+import pandas as pd
 import numpy as np
-from torch import nn
+from pathlib import Path
+
+import torch
+import torch.nn as nn
 from torch.utils.data import Dataset, DataLoader
-from tqdm import tqdm
-from torch.utils.tensorboard import SummaryWriter
 
-# config start
+# --------------------
+# CONFIG
+# --------------------
+DATASET_DIR = "datasets"
+IMAGE_SIZE = (512, 512)
+
+BATCH_SIZE = 64
+EPOCHS = 40
+LR = 1e-4
+
+SAVE_EVERY = 2  # epochs
 CHECKPOINT_DIR = "checkpoints"
-os.makedirs(CHECKPOINT_DIR, exist_ok=True)
 
-DATA_DIR = "dataset"          # contains run01, run02, ...
-IMG_SIZE = 256                # image size (square)
-FRAME_STACK = 4               # number of frames stacked
-BATCH_SIZE = 128              # training batch size
-EPOCHS = 5                    # total training epochs
-LR = 1e-4                     # learning rate
+DEVICE = "mps" if torch.backends.mps.is_available() else "cpu"
+print(f"[INFO] Using device: {DEVICE}")
 
-# Continuous attention
-BASE_WEIGHT = 0.4             # minimum weight for zero frames
-DYNAMIC_WEIGHT = 0.1          # how much nonzero frames add (0–1)
-ATTN_SCALE = 0.1              # sensitivity
-
-SAVE_EVERY = 1                # epochs to save checkpoints
-
-MODEL_DIR = "models"          # model folder directory
-MODEL_PATH = os.path.join(MODEL_DIR, "control_model.pth")         # model save path
-
-# config end
-
-writer = SummaryWriter("runs")
-
-def find_runs(root):
-    return [
-        os.path.join(root, d)
-        for d in sorted(os.listdir(root))
-        if d.startswith("run") and os.path.isdir(os.path.join(root, d))
-    ]
-
-
-class ControlDataset(Dataset):
-    def __init__(self, root):
+# --------------------
+# DATASET
+# --------------------
+class ImitationDataset(Dataset):
+    def __init__(self, dataset_dir):
         self.samples = []
 
-        runs = find_runs(root)
+        runs = sorted([
+            d for d in os.listdir(dataset_dir)
+            if d.startswith("run") and os.path.isdir(os.path.join(dataset_dir, d))
+        ])
+
         if not runs:
-            raise RuntimeError("No runXX folders found")
+            raise RuntimeError("No valid run directories found")
+
+        print(f"[INFO] Found runs: {runs}")
 
         for run in runs:
-            frames_dir = os.path.join(run, "frames")
-            csv_path = os.path.join(run, "actions.csv")
-            if not os.path.exists(frames_dir) or not os.path.exists(csv_path):
+            run_path = Path(dataset_dir) / run
+            frames_dir = run_path / "frames"
+            actions_path = run_path / "actions.csv"
+
+            if not frames_dir.exists() or not actions_path.exists():
                 continue
 
-            with open(csv_path, newline="") as f:
-                rows = list(csv.DictReader(f))
+            actions = pd.read_csv(actions_path)
+            frame_files = sorted(frames_dir.glob("*.png"))
 
-            for i in range(FRAME_STACK - 1, len(rows)):
-                self.samples.append((frames_dir, rows, i))
+            assert len(frame_files) == len(actions), \
+                f"Frame/action mismatch in {run}"
 
-        if not self.samples:
-            raise RuntimeError("Dataset is empty")
+            for i in range(len(actions)):
+                self.samples.append(
+                    (frame_files[i], actions.iloc[i].values.astype(np.float32))
+                )
 
-        print(f"Dataset samples: {len(self.samples)}")
+        print(f"[INFO] Total samples: {len(self.samples)}")
 
     def __len__(self):
         return len(self.samples)
 
     def __getitem__(self, idx):
-        frames_dir, rows, i = self.samples[idx]
+        frame_path, action = self.samples[idx]
 
-        imgs = []
-        for j in range(i - FRAME_STACK + 1, i + 1):
-            img = cv2.imread(os.path.join(frames_dir, rows[j]["frame"]))
-            img = cv2.resize(img, (IMG_SIZE, IMG_SIZE))
-            img = img.astype(np.float32) / 255.0
-            imgs.append(np.transpose(img, (2, 0, 1)))
+        img = cv2.imread(str(frame_path))
+        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
 
-        x = np.concatenate(imgs, axis=0)  # 12×256×256
+        # ---- FORCE 512x512 ----
+        img = cv2.resize(img, IMAGE_SIZE, interpolation=cv2.INTER_AREA)
 
-        y = np.array([
-            float(rows[i]["w_s"]),
-            float(rows[i]["a_d"]),
-            float(rows[i]["q_e"]),
-            float(rows[i]["shift_ctrl"]),
-            float(rows[i]["mouse_dx"]),
-            float(rows[i]["mouse_dy"]),
-        ], dtype=np.float32)
+        img = img.astype(np.float32) / 255.0
+        img = np.transpose(img, (2, 0, 1))  # CHW
 
-        return torch.tensor(x), torch.tensor(y)
+        return (
+            torch.tensor(img, dtype=torch.float32),
+            torch.tensor(action, dtype=torch.float32)
+        )
 
-
-class ControlNet(nn.Module):
-    def __init__(self):
+# --------------------
+# MODEL
+# --------------------
+class CNNPolicy(nn.Module):
+    def __init__(self, conv_out_size, num_actions=4):
         super().__init__()
-        self.cnn = nn.Sequential(
-            nn.Conv2d(12, 32, 5, stride=2),
+
+        self.conv = nn.Sequential(
+            nn.Conv2d(3, 16, 5, stride=2),
+            nn.ReLU(),
+            nn.Conv2d(16, 32, 5, stride=2),
             nn.ReLU(),
             nn.Conv2d(32, 64, 5, stride=2),
             nn.ReLU(),
-            nn.Conv2d(64, 128, 3, stride=2),
-            nn.ReLU(),
-            nn.AdaptiveAvgPool2d((1, 1))
         )
-        self.fc = nn.Linear(128, 6)
+
+        self.fc = nn.Sequential(
+            nn.Linear(conv_out_size, 256),
+            nn.ReLU(),
+            nn.Linear(256, num_actions)
+        )
 
     def forward(self, x):
-        x = self.cnn(x)
-        return self.fc(x.flatten(1))
+        x = self.conv(x)
+        x = torch.flatten(x, 1)
+        return self.fc(x)
 
+# --------------------
+# TRAINING
+# --------------------
+def train():
+    dataset = ImitationDataset(DATASET_DIR)
 
-# nonzero attention computation
-
-def compute_attention(actions):
-    mouse_mag = torch.norm(actions[:, 4:6], dim=1)
-    key_mag = torch.norm(actions[:, :4], dim=1)
-
-    mag = 1.5 * mouse_mag + 1.0 * key_mag
-    attn = torch.tanh(mag * ATTN_SCALE)  # range 0–1
-
-    return attn
-
-
-def main():
-    os.makedirs(MODEL_DIR, exist_ok=True)
-
-    dataset = ControlDataset(DATA_DIR)
     loader = DataLoader(
         dataset,
         batch_size=BATCH_SIZE,
         shuffle=True,
-        num_workers=0,      # Windows safe
-        pin_memory=True,
-        drop_last=True
+        num_workers=0,
+        pin_memory=False
     )
 
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    print("Using device:", device)
+    # ---- infer conv output size dynamically ----
+    with torch.no_grad():
+        dummy_img, _ = dataset[0]
+        dummy_img = dummy_img.unsqueeze(0)
 
-    model = ControlNet().to(device)
+        conv_probe = nn.Sequential(
+            nn.Conv2d(3, 16, 5, stride=2),
+            nn.ReLU(),
+            nn.Conv2d(16, 32, 5, stride=2),
+            nn.ReLU(),
+            nn.Conv2d(32, 64, 5, stride=2),
+            nn.ReLU(),
+        )
+
+        conv_out = conv_probe(dummy_img)
+        conv_out_size = conv_out.view(1, -1).shape[1]
+
+    model = CNNPolicy(conv_out_size).to(DEVICE)
     optimizer = torch.optim.Adam(model.parameters(), lr=LR)
+    loss_fn = nn.MSELoss()
 
-    start_epoch = 0
-    if os.path.exists(MODEL_PATH):
-        ckpt = torch.load(MODEL_PATH, map_location=device)
-        model.load_state_dict(ckpt["model"])
-        optimizer.load_state_dict(ckpt["optim"])
-        start_epoch = ckpt["epoch"] + 1
-        print(f"Resuming from epoch {start_epoch}")
+    os.makedirs(CHECKPOINT_DIR, exist_ok=True)
 
-    for epoch in range(start_epoch, EPOCHS):
-        model.train()
-        running_loss = 0.0
+    print("[INFO] Starting training")
 
-        pbar = tqdm(loader, desc=f"Epoch {epoch}", unit="batch")
-        for imgs, actions in pbar:
-            imgs = imgs.to(device, non_blocking=True)
-            actions = actions.to(device, non_blocking=True)
+    for epoch in range(EPOCHS):
+        print(f"[INFO] Epoch {epoch+1} started")
+        total_loss = 0.0
 
-            pred = model(imgs)
+        for imgs, actions in loader:
+            imgs = imgs.to(DEVICE)
+            actions = actions.to(DEVICE)
 
-            base_loss = ((pred - actions) ** 2).mean(dim=1)
-            attn = compute_attention(actions)
-
-            loss = (base_loss * (BASE_WEIGHT + DYNAMIC_WEIGHT * attn)).mean()
+            preds = model(imgs)
+            loss = loss_fn(preds, actions)
 
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
 
-            running_loss += loss.item()
-            pbar.set_postfix(loss=running_loss / (pbar.n + 1))
+            total_loss += loss.item()
 
+        avg_loss = total_loss / len(loader)
+        print(f"[EPOCH {epoch+1}/{EPOCHS}] Loss: {avg_loss:.6f}")
 
-        # tensorboard logging
-        writer.add_scalar("train/loss", loss, epoch)
-
-        writer.add_scalar(
-            "train/mouse_mag",
-            actions[:, 4:6].norm(dim=1).mean().item(),
-            epoch
-        )
-
-        writer.add_scalar(
-            "train/key_mag",
-            actions[:, :4].norm(dim=1).mean().item(),
-            epoch
-        )
-        
         if (epoch + 1) % SAVE_EVERY == 0:
-            ckpt_path = os.path.join(
-                CHECKPOINT_DIR,
-                f"checkpoint_epoch_{epoch+1}.pth"
-            )
+            ckpt_path = f"{CHECKPOINT_DIR}/pila_epoch_{epoch+1}.pt"
+            torch.save(model.state_dict(), ckpt_path)
+            print(f"[INFO] Saved checkpoint: {ckpt_path}")
 
-            torch.save({
-                "epoch": epoch + 1,
-                "model_state": model.state_dict(),
-                "optimizer_state": optimizer.state_dict(),
-            }, ckpt_path)
+    final_path = f"{CHECKPOINT_DIR}/pila_final.pt"
+    torch.save(model.state_dict(), final_path)
+    print(f"[INFO] Final model saved to {final_path}")
 
-            print(f"[✔] Saved checkpoint: {ckpt_path}")
-
-        if epoch == EPOCHS - 1:
-            torch.save({
-            "epoch": epoch,
-            "model": model.state_dict(),
-            "optim": optimizer.state_dict()
-        }, MODEL_PATH)
-
-    print("Training complete")
-
-
-
+# --------------------
 if __name__ == "__main__":
-    torch.multiprocessing.freeze_support()
-    main()
+    train()

@@ -1,0 +1,19 @@
+# Python
+__pycache__/
+*.pyc
+
+# Virtual environment
+venv/
+.env/
+
+# Datasets and training artifacts
+datasets/
+checkpoints/
+*.pt
+
+# OS
+.DS_Store
+
+# Logs
+*.log
+

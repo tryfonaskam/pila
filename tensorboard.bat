@@ -1,1 +1,0 @@
-py -3.11 -m tensorboard.main --logdir=runs

@@ -1,209 +1,164 @@
-# PILA — PolyTrack Imitation Learning Agent
+# PILA (macOS) — Polytrack Imitation Learning Agent
 
-**PILA (PolyTrack Imitation Learning AI)** is an imitation learning agent trained to play **PolyTrack** by learning directly from recorded human gameplay — not from hard-coded rules.
+**PILA (Polytrack Imitation Learning Agent)** is an experimental imitation learning system designed to learn and reproduce human gameplay behavior directly from raw interaction data. The project captures keyboard inputs and screen frames, converts them into a structured dataset, and trains a neural model capable of playing the game autonomously by imitating recorded human behavior.
 
-Instead of manually programming behavior, PILA uses **supervised learning** to map game states to player actions, allowing it to imitate realistic human driving.
+This repository contains the **macOS implementation** of PILA, including:
+- A data capture pipeline
+- Dataset construction logic
+- Model training workflow
+- Real-time inference for autonomous gameplay
 
-<div align='center'>
-  your view of the imitation learning agent driving
-  <br>
-  <img alt="your view" src="https://github.com/tryfonaskam/pila/blob/main/gifs/original.gif">
-</div>
-
-<div align='center'>
-  imitation learning agent driving view
-  <br>
-  <img alt="AGENT VIEW" src="https://github.com/tryfonaskam/pila/blob/main/gifs/agent_view.gif">
-</div>
+The long-term goal of PILA is to evolve into a **universal imitation learning framework** capable of learning arbitrary computer interactions (games, tools, workflows) without environment-specific hardcoding. That work is currently **in active development**.
 
 ---
 
-## What Is PILA?
+## Demo
 
-PILA learns how to play PolyTrack by:
+### Model Playing the Game (Short Clip)
 
-- Observing gameplay data (states + actions)
-- Training a neural network on this data
-- Reproducing player behavior in real time inside the game
+Below is a short demo of the trained PILA model autonomously playing the game after learning from recorded human input:
 
-This approach eliminates hand-written logic and relies entirely on **learning by example**.
+![PILA Model Playing PolyTrack](assets/demo.gif)
 
----
 
-## How It Works
+### Full Demonstration Video (Extended)
 
-### Data Collection
-- Gameplay is recorded as **observations (inputs)** and **actions(input and output)**
-  
-- Outputs represent player controls:
-  - Steering
-  - Throttle
-  - Brake
+For a longer, uninterrupted demonstration—including model stability and general behavior—watch the full video here:
 
-##
-
-### Training
-- A neural network is trained using **imitation learning**
-- The model minimizes loss between:
-  - Predicted actions
-  - Recorded player actions
-- Trained models are saved as **checkpoints(every 2 epochs) or complete save** for later use
-##
-
-### Inference / Playing
-1. The trained model reads **live game frames**
-2. It predicts the next actions using the current frame
-3. Actions are sent to the game as **keyboard inputs**
-
----
-## Requirements
-
--  Modern **CPU or GPU**
--  **Python 3.11.9**
----
-
-## how to use PILA
-
-### start by cloning the repo
-
-```bash
-git clone https://github.com/tryfonaskam/pila.git
-cd pila
-```
-after you successfully cloned the repo you will need to install the requirements for the code to work correctly to do that run this command
-
-```bash
-pip -r requirements.txt
-```
-
-or install the manually
-> note all requirements should be installed
-> 
-the installation is now complete.
+**▶ Full demo video:**  
+https://drive.google.com/file/d/1kZ5in9gRVzJvNwi8Tk2CXrAiEsIv1SD5/view?usp=sharing
 
 ---
 
-## dataset creation and training
+## Project Overview
 
-you should start with one of these commands
+At a high level, PILA follows this pipeline:
 
-***⬇for automatic recapture⬇***
+### 1. Human Gameplay Recording
+- Keyboard input is captured at high temporal resolution
+- Screen frames are recorded and synchronized with inputs
 
-```bash
-python3 loop_datamaker.py
-```
-***⬇you have to re-run the script each run⬇***
+### 2. Dataset Generation
+- Input–frame pairs are serialized into a structured dataset
+- Data is optimized for supervised imitation learning
 
-```bash
-python3 datasetmake.py
-```
+### 3. Model Training
+- A neural network is trained to predict actions from visual state
+- Training is fully offline and reproducible
 
-after the execution of ***ONE*** of the scripts you should switch to your game window
-
->the game window should be windowed fullscreen for the code to work automatically
-
-
->or you ***NEED*** to set REGION = [None = full monitor] or set (left, top, right, bottom)
-
-press ***F1*** to start capturing. then play the game and press ***F10*** to stop and save
-> NOTE 1. you need to play the game smoothly and correctly for the model to be good
-
-> NOTE 2. if you run ```python3 datasetmake.py``` you will need to re-start the script
-> if you run ```python3 loop_datamaker.py``` you can just press ***F1*** to start capturing again
-
-***the keys that are geting captured are just  ```Shift```, ```Ctrl```, ```w```, ```a```, ```s```, ```d```, ```q```, ```e``` and ```mouse movment```***
-
->[!TIP]
-> increase the FPS for better capturing
-
->[!CAUTION]
->this will greatly increase the size of each run
+### 4. Autonomous Gameplay
+- The trained model runs in real time
+- Screen input → model inference → simulated keypresses
 
 ---
 
-## training
+## Installation & Setup
 
-for this step you will need to have a modern GPU or CPU
-to start training run this command⬇
+### 1. Clone the Repository
 ```bash
-python3 train.py
-```
-this will start training of the model using the datasets/ directory.
-a checkpoint is saved every SAVE_EVERY = N the default is 2 in the checkpoints/ directory
-you can stop training at any point and re-run the script to automatically resume training
-
-to see a graphical representation of the loss, mag_key and mag_mouse run this command⬇
-
-**for linux⬇**
-```bash
-tensorboard --bind_all --logdir runs/
-```
-for windows you can run the ```tensorboard.bat``` file or run this command⬆
-# training settings
-
-```bash
-BASE_WEIGHT = 0.4             # minimum weight for zero frames
-DYNAMIC_WEIGHT = 0.1          # how much nonzero frames add (0–1)
-ATTN_SCALE = 0.1              # sensitivity
+git clone https://github.com/sahusaurya/pila_mac.git
+cd pila_mac
 ```
 
->NOTE: a nonzero frame is a frame that has a value of 0 inside the actions.csv
+### 2. Create and Activate a Virtual Environment
+```bash
+python3 -m venv venv
+source venv/bin/activate
+```
 
->```BASE_WEIGHT```minimum importance of every frame. if a frame is 0 It still contributes 40% of a normal loss
-
->```DYNAMIC_WEIGHT```Extra weight added when something happens. The more action → the more weight (up to a limit).
-
->```ATTN_SCALE = 0.1```ATTN_SCALE = 0.1. Controls how fast attention grows
+### 3. Install Dependencies
+```bash
+pip install -r requirements.txt
+```
 
 ---
 
-## playing
+## Running the Project (Recommended Order)
 
-to get the model to play the game you need to run this command⬇
-
+### Step 1: Capture Gameplay Data
+Record your own gameplay to generate a dataset:
 ```bash
-python3 play.py
+python -m capture.datasetmake
 ```
 
-after that you have ~5 seconds to switch to your game
->NOTE: it needs to be the same size and resolution as in training
+Follow the on-screen instructions to start and stop recording.
 
-now the model will play the game
+### Step 2: Train the Model
+Train the imitation learning model on the generated dataset:
+```bash
+python train.py
+```
 
->[!IMPORTANT]
->if anything goes wrong press "esc" to stop the model
+Model checkpoints will be saved automatically.
 
-## advantages
+### Step 3: Run the Trained Agent
+Let the model play the game autonomously:
+```bash
+python play.py
+```
 
-one big list of advantages is the User-Friendly and Robust Workflow
+---
 
-***1. Automatic Data Organization: The data collection scripts automatically create and manage datasets in clearly labeled folders (run01, run02, etc.), keeping your experiments organized.***
+## Pretrained Assets (For Quick Testing)
 
-***2. Resumable Training: You can stop and resume the training process at any time without losing progress, which is perfect for long training sessions and serious projects.***
+If you want to skip data collection and training, you can use the exact assets shown in the demo.
 
-***3. Integrated Visualization: With TensorBoard support, you can easily graph the model's learning progress to see how its performance improves over time.***
+- **Sample dataset (Google Drive):** Raw screen frames and action labels collected from human PolyTrack gameplay (macOS).  
+  https://drive.google.com/drive/folders/1f9Jg0l5n-Ip7juFT6VKr23beQFkOnazS?usp=sharing
 
-***Flexible and Configurable: Key parameters for data collection, training, and inference are clearly defined, making it easy to experiment and tune the agent's behavior.***
+Place it in:
+```
+datasets/
+```
+Preserve the internal structure and naming convention used inside the individual runs. The names of the directories of each recording session(runs) can be changed and will not affect the training or playing phases.
 
-***Clear and Modular Codebase: The project is well-structured and serves as an excellent learning resource for anyone interested in imitation learning, computer vision, or game AI.***
+- **Pretrained model (.pt):** Trained on PolyTrack gameplay (macOS).  
+  https://drive.google.com/file/d/15t0sMfw4ACcbCK3slHOAooJs1QdC0pGU/view
 
-## ***KEY ADVANTAGES***
-***1. Another advantage is that the code’s modular, flexible design allows it to be reused across different games and applications. This adaptability makes it easy to integrate into new projects or expand its functionality without rewriting the core logic.***
+Place it in:
+```
+checkpoints/
+```
+The name of the model has to be pila_final.pt, since the path in play.py requires this.
 
-***2. End-to-End Imitation Learning: the project provides a complete, self-contained pipeline for building a game-playing AI. It handles everything from data collection and training to real-time inference, making it a comprehensive solution.***
+---
 
-***3. Learns by Example, Not by Rules: PILA learns directly from observing human gameplay. This "show, don't tell" approach is powerful because it requires no hard-coded logic or manual programming of behaviors, allowing it to  learn complex and nuanced driving styles.***
+## Platform Support
 
-***4. Real-Time Performance: The agent operates in real-time, using efficient screen capturing (dxcam) and a streamlined model to react to live gameplay without significant lag.***
+- **macOS:** This repository
+- **Windows:** Separate implementation available here:  
+  https://github.com/tryfonaskam/pila``/pila_windows
 
-***5. Intelligent Training with Attention: The training process uses a custom attention mechanism that gives more weight to frames with significant player actions. This helps the model focus on the most important moments of gameplay, leading to more efficient and effective learning.***
+The two repositories share the same conceptual architecture but differ in OS-specific input capture and control logic.
+
+---
+
+## Current Status & Future Work
+
+PILA is an **active research prototype**. Ongoing and planned improvements include:
+- Universal, configurable key-mapping (no hardcoded controls)
+- Mouse movement and click imitation
+- Higher-frequency temporal modeling
+- Cross-application generalization
+- Modular environment abstraction
+
+The broader objective is to develop PILA into a **general-purpose imitation learning engine** capable of learning arbitrary computer interactions directly from demonstrations.
 
 ---
 
 ## Credits
 
-**[tryfonaskam](https://github.com/tryfonaskam)** — Project author and lead developer.  
-Designed and implemented the full imitation learning pipeline, including data capture, dataset organization, neural network architecture, training workflow, checkpointing, and real-time inference. Responsible for model training, experimentation, documentation, and overall project execution.
+### Saurya Aditya Sahu  
+**[sahusaurya](https://github.com/sahusaurya) — Project Co-Designer & macOS / Apple Silicon Lead**
 
-**[sahusaurya](https://github.com/sahusaurya)** — Project ideation and environment contribution.  
-Helped shape the initial project direction, identifying PolyTrack as an appropriate environment for imitation learning, and contributing a custom-designed test track used for evaluation.
+Co-designed the project direction and independently designed and implemented the complete macOS- and Apple Silicon–specific PILA pipeline. Led the rewrite of the data capture system for macOS, including a modular screen capture and input-state architecture, canonical 512×512 preprocessing enforced consistently across data collection, training, and inference, and a macOS-compatible real-time control loop.
+
+Additionally implemented Apple Silicon (MPS)–based training support, authored independent `train.py` and `play.py` pipelines aligned with the macOS capture format, and conducted standalone model training and experimentation on macOS systems. Contributed to early project direction by identifying PolyTrack as a suitable imitation-learning environment and assisting with test environment setup.
+
+---
+
+### Tryfonas Kampouropoulos  
+**[tryfonaskam](https://github.com/tryfonaskam) — Project Author & Core Pipeline Lead**
+
+Project author and lead developer. Designed and implemented the original PILA imitation learning pipeline, including the initial data capture logic, dataset organization, neural network architecture, training workflow, checkpointing, and real-time inference. Led early experimentation, baseline model training, documentation, and overall execution of the original system.
+
