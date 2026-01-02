@@ -9,7 +9,7 @@ import time
 
 # config start
 
-FPS = 35
+FPS = 30
 FRAME_TIME = 1.0 / FPS
 
 BASE_DIR = "dataset"      # Base folder for all runs
@@ -22,8 +22,14 @@ KEY_A = 'a'
 KEY_D = 'd'
 KEY_Q = 'q'
 KEY_E = 'e'
+KEY_SPACE = 'space'
 KEY_SHIFT = 'shift'
 KEY_CTRL = 'ctrl'
+
+# mouse buttons
+MOUSE_LEFT = "left"
+MOUSE_RIGHT = "right"
+
 
 START_KEY = 'F1'
 STOP_KEY  = 'F10'
@@ -101,7 +107,13 @@ try:
             w_s = axis(KEY_S, KEY_W)
             a_d = axis(KEY_A, KEY_D)
             q_e = axis(KEY_Q, KEY_E)
+            space = 1.0 if keyboard.is_pressed(KEY_SPACE) else 0.0
             shift_ctrl_val = shift_ctrl()
+
+            # mouse controls
+            left_click  = 1.0 if mouse.is_pressed(MOUSE_LEFT) else 0.0
+            right_click = 1.0 if mouse.is_pressed(MOUSE_RIGHT) else 0.0
+
 
             # Mouse deltas (relative)
             mx, my = mouse.get_position()
@@ -124,9 +136,12 @@ try:
                 w_s,
                 a_d,
                 q_e,
+                space,
                 shift_ctrl_val,
                 mouse_dx_scaled,
-                mouse_dy_scaled
+                mouse_dy_scaled,
+                left_click,
+                right_click
             ])
 
             frame_id += 1
@@ -135,7 +150,7 @@ try:
 
         # Save data after stopping
         df = pd.DataFrame(records, columns=[
-            "frame","w_s","a_d","q_e","shift_ctrl","mouse_dx","mouse_dy"
+            "frame","w_s","a_d","q_e","space","shift_ctrl","mouse_dx","mouse_dy","left_click","right_click"
         ])
         df.to_csv(CSV_PATH, index=False)
         print(f" Saved {len(df)} samples to {CSV_PATH}")

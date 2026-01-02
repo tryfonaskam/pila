@@ -10,11 +10,11 @@ from torch import nn
 time.sleep(5)
 
 # config start
-MODEL_PATH = "models\control_model.pth"
+MODEL_PATH = "checkpoints/checkpoint_epoch_50.pth"
 
 IMG_SIZE = 256
 FRAME_STACK = 4
-FPS = 30
+FPS = 120
 
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 STOP_KEY = "esc"
@@ -26,8 +26,9 @@ MOUSE_SCALE_Y = 0.0
 # Control thresholds
 QE_THRESH = 0.008
 SHIFT_CTRL_THRESH = 0.005
-WASD_THRESH = 0.5
-
+WASD_THRESH = 0.25
+SPACE_THRESH = 0.5
+CLICK_THRESH = 0.5
 # Integrator smoothing
 MOUSE_ALPHA = 0.6
 SHIFT_CTRL_ALPHA = 0.05
@@ -48,7 +49,7 @@ class ControlNet(nn.Module):
             nn.ReLU(),
             nn.AdaptiveAvgPool2d((1, 1))
         )
-        self.fc = nn.Linear(128, 6)
+        self.fc = nn.Linear(128, 9)
 
     def forward(self, x):
         x = self.cnn(x)
@@ -119,7 +120,7 @@ while not keyboard.is_pressed(STOP_KEY):
     with torch.no_grad():
         out = model(inp)[0].cpu().numpy()
 
-    w_s, a_d, q_e, shift_ctrl, mouse_dx, mouse_dy = out
+    w_s, a_d, q_e, space, shift_ctrl, mouse_dx, mouse_dy, left_click, right_click = out
 
     # mouse
 
@@ -151,7 +152,7 @@ while not keyboard.is_pressed(STOP_KEY):
         keyboard.release("s")
 
     # A and D
-    if a_d > WASD_THRESH:
+    if a_d > WASD_THRESH + 0.1:
         keyboard.press("d")
         keyboard.release("a")
     elif a_d < -WASD_THRESH:
@@ -172,6 +173,23 @@ while not keyboard.is_pressed(STOP_KEY):
     else:
         keyboard.release("q")
         keyboard.release("e")
+
+    # space and mouse clicks
+    if space > SPACE_THRESH:
+        keyboard.press("space")
+    else:
+        keyboard.release("space")
+    
+    if left_click > CLICK_THRESH:
+        mouse.press(button='left')
+        mouse.release(button='right')
+    elif right_click < -CLICK_THRESH:
+        mouse.press(button='right')
+        mouse.release(button='left')
+    else:
+        mouse.release(button='left')
+        mouse.release(button='right')
+        
 
     # shift and ctrl
     shift_ctrl_state = (
@@ -201,5 +219,8 @@ keyboard.release("w")
 keyboard.release("a")
 keyboard.release("s")
 keyboard.release("d")
+keyboard.release("space")
+mouse.release(button='left')
+mouse.release(button='right')
 
 print("[INFO] AI stopped.")

@@ -85,9 +85,12 @@ class ControlDataset(Dataset):
             float(rows[i]["w_s"]),
             float(rows[i]["a_d"]),
             float(rows[i]["q_e"]),
+            float(rows[i]["space"]),
             float(rows[i]["shift_ctrl"]),
             float(rows[i]["mouse_dx"]),
             float(rows[i]["mouse_dy"]),
+            float(rows[i]["left_click"]),
+            float(rows[i]["right_click"])
         ], dtype=np.float32)
 
         return torch.tensor(x), torch.tensor(y)
@@ -105,7 +108,7 @@ class ControlNet(nn.Module):
             nn.ReLU(),
             nn.AdaptiveAvgPool2d((1, 1))
         )
-        self.fc = nn.Linear(128, 6)
+        self.fc = nn.Linear(128, 9) #the last numbere is the number of outputs
 
     def forward(self, x):
         x = self.cnn(x)
