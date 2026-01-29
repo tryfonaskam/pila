@@ -127,7 +127,7 @@ The name of the model has to be pila_final.pt, since the path in play.py require
 
 - **macOS:** This repository
 - **Windows:** Separate implementation available here:  
-  https://github.com/tryfonaskam/pila``/pila_windows
+  https://github.com/tryfonaskam/pila
 
 The two repositories share the same conceptual architecture but differ in OS-specific input capture and control logic.
 
