@@ -296,7 +296,7 @@ y = np.array([
     float(rows[i]["right_click"])
 ], dtype=np.float32)
 ```
-**final. step 2. change so the last numbere is the number of outputs from step. 1⬆**
+**final. step 2. change so the last number is the number of outputs from step. 1⬆**
 ```bash
 class ControlNet(nn.Module):
     def __init__(self):
