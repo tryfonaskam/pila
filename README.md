@@ -2,7 +2,6 @@
 
 <p align="center">
   <a href="https://discord.gg/FqaBgZBGtG" target="_blank" rel="noopener noreferrer"><img src="https://img.shields.io/badge/Discord-Join%20Server-5865F2?logo=discord&logoColor=white" alt="Discord"></a>
-  <a href="https://www.tiktok.com/@tryfonaskam" target="_blank" rel="noopener noreferrer"><img src="https://img.shields.io/badge/TikTok-%23000000.svg?style=for-the-badge&logo=TikTok&logoColor=white" alt="License: Apache-2.0"></a>
   <a href="https://www.apache.org/licenses/LICENSE-2.0.html" target="_blank" rel="noopener noreferrer"><img src="https://img.shields.io/badge/License-Apache2.0-blue.svg" alt="License: Apache-2.0"></a>
   
   
@@ -418,10 +417,53 @@ to visualize patterns in the training data.
   <img src="https://github.com/tryfonaskam/pila/blob/main/gifs/patterns.png" alt="pattern view" style="max-width:50%; height:auto;">
 </div>
 
-## Contributing & Feedback
+## 🤝 Contributing
 
-Have ideas, improvements, or demo videos to share?  
-Feel free to reach out or open an issue — contributions and feedback are always welcome!
+PILA is an open-source project, and contributions of all sizes are welcome! Whether you are a deep learning expert, a Python developer, or a PolyTrack pro, here is how you can help:
+
+### 🛠️ How You Can Contribute
+
+#### 🟢 Level 1: Low Effort / High Impact
+- **Demo Videos:** Record the AI playing a custom track or failing in a funny way. These are great for the README and social media.
+- **Bug Reports:** Found a glitch in the data capture or a crash during training? Open an issue with your system specs and a description of the bug.
+- **Documentation:** Help improve the guide! If a step was confusing or a requirement was missing, submit a PR to make it clearer for others.
+
+#### 🟡 Level 2: Intermediate
+- **Data Donation:** Provide high-quality, "perfect" gameplay datasets for complex tracks. This helps everyone train better models.
+- **Feature Requests:** Suggest a new tool or architecture.
+- **Performance Tweaks:** Optimize the screen capture or inference loop to reduce lag.
+
+#### 🔴 Level 3: Advanced
+- **Architecture Upgrades:** Implement new model backbones (e.g., replacing the CNN with a Vision Transformer/ViT).
+- **Generalization:** Help with a modular system that allows PILA to work with other games without manual key re-mapping.
+- **Algorithm Research:** Improve the attention mechanism to better handle "edge cases" in driving.
+
+### 🚀 Getting Started
+1. **Fork** the repository.
+2. **Create a branch** for your feature or fix`).
+3. **Commit** your changes with clear messages.
+4. **Push** to the branch and open a **Pull Request**.
+
+**Let's build the future of imitation learning together!**
+
+---
+
+## 🚀 Join the Evolution
+
+PILA is more than just a script—it's a framework for understanding how AI can learn from humans. By starring this project, you're supporting the development of open-source imitation learning tools.
+
+### 🛠️ What's Next? (Roadmap)
+We are actively working on expanding PILA's capabilities:
+- [ ] **Multi-Game Support:** Generic wrappers to adapt PILA to any screen-based game in minutes.
+- [ ] **Advanced Architectures:** Experimenting with Transformers and LSTM for better long-term memory.
+- [ ] **Community Model Hub:** A place to share and download pre-trained "Pro" models for various tracks.
+- [ ] **Enhanced Visualizer:** A more intuitive GUI for analyzing gameplay patterns in real-time.
+
+### ⭐ Support the Project
+If you found this project useful, or if you're excited about the future of AI agents, **please give this repository a star!**
+
+Your stars help other developers find the project and motivate me to keep adding new features and optimizations.
+
 
 ---
 
